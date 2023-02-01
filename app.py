@@ -18,9 +18,9 @@ def requires_token(f):
         if api_token_header in request.headers:
             token = request.headers[api_token_header]
         if not token:
-            return {"message": "A valid token is missing!"}
+            return {"message": "Client error: A valid token is missing!"}, 400
         if not app.config['API_TOKEN'] == token:
-            return {"message": "Your token is invalid!"}
+            return {"message": "Client error: Your token is invalid!"}, 401
         return f(*args, **kwargs)
     return decorator
 
@@ -28,19 +28,18 @@ def requires_token(f):
 @app.route('/', methods=['POST'])
 @requires_token
 def similar():
+    requestedLimit = 5
     question = request.form.get('question')
 
     if not question:
-        return {
-            'message': 'Nope',
-        }
+        return {'message': 'Client error: No question provided'}, 400
 
     service = ProblemFixService(app)
-    similarQuestions = service.getSimilarFor(question, 5)
+    similarQuestions = service.getSimilarFor(question, requestedLimit)
 
     return {
         'message': 'AutoInsider Problem Fix ML Service',
         'question': question,
-        'requested': 10,
+        'requested': requestedLimit,
         'similar-questions': similarQuestions
-    }
+    }, 200
