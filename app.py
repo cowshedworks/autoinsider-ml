@@ -1,6 +1,8 @@
+
 from flask import Flask, request
 import config as config
 from functools import wraps
+from ml import ProblemFixService
 
 app = Flask(__name__)
 app.config.from_object(config)
@@ -27,6 +29,19 @@ def requires_token(f):
 @app.route('/', methods=['POST'])
 @requires_token
 def similar():
+    question = request.form.get('question')
+
+    if not question:
+        return {
+            'message': 'Nope',
+        }
+
+    service = ProblemFixService(app)
+    similarQuestions = service.getSimilarFor(question, 5)
+
     return {
-        'message': 'Welcome to the ML Service!'
+        'message': 'AutoInsider Problem Fix ML Service',
+        'question': question,
+        'requested': 10,
+        'similar-questions': similarQuestions
     }
