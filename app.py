@@ -34,12 +34,15 @@ def similar():
     if not question:
         return {'message': 'Client error: No question provided'}, 400
 
-    service = ProblemFixService(app)
-    similarQuestions = service.getSimilarFor(question, requestedLimit)
+    try:
+        service = ProblemFixService(app)
+        similarQuestions = service.getSimilarFor(question, requestedLimit)
 
-    return {
-        'message': 'AutoInsider Problem Fix ML Service',
-        'question': question,
-        'requested': requestedLimit,
-        'similar-questions': similarQuestions
-    }, 200
+        return {
+            'message': 'AutoInsider Problem Fix ML Service',
+            'question': question,
+            'requested': requestedLimit,
+            'similar-questions': similarQuestions
+        }, 200
+    except:
+        return {'message': 'Server error'}, 500
