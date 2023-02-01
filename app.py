@@ -15,10 +15,9 @@ def requires_token(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         token = None
-        # ensure the jwt-token is passed with the headers
         if api_token_header in request.headers:
             token = request.headers[api_token_header]
-        if not token:  # throw error if no token provided
+        if not token:
             return {"message": "A valid token is missing!"}
         if not app.config['API_TOKEN'] == token:
             return {"message": "Your token is invalid!"}

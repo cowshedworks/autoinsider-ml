@@ -17,14 +17,10 @@ class ProblemFixService:
     def _getContext(self, question, top_k):
         retrieverEncoder = self._getRetriever()
         index = self.pineconeService.getIndex()
-
-        # generate embeddings for the question
         xq = retrieverEncoder.encode([question]).tolist()
-        # search pinecone index for context passage with the answer
         xc = index.query(xq, top_k=top_k, include_metadata=True)
-        # extract the context passage from pinecone search result
-        c = [self._transformResult(x) for x in xc["matches"]]
-        return c
+
+        return [self._transformResult(x) for x in xc["matches"]]
 
     def _transformResult(self, result):
         return {
