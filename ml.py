@@ -4,20 +4,39 @@ from flask import current_app
 
 
 class ProblemFixService:
-    def __init__(self, flask, device='cpu'):
+    def __init__(self, device='cpu'):
         self.device = device
         self.pineconeService = PineconeService("extractive-question-answering")
 
     def get_similar_for(self, questionText, limit):
         return self._get_context(questionText, top_k=limit)
 
+    def add_to_index(self, df):
+        retriever_encoder = self._get_retriever()
+        index = self.pineconeService.get_index()
+
+        # we will use batches of 64
+        batch_size = 64
+
+        for i in range(0, len(df), batch_size):
+            # find end of batch
+            i_end = min(i+batch_size, len(df))
+            # extract batch
+            batch = df.iloc[i:i_end]
+            # generate embeddings for batch
+            emb = retriever_encoder.encode(batch['Problem'].tolist()).tolist()
+            ids = batch['ID'].tolist()
+            meta = batch[['Title', 'Problem']].to_dict(orient="records")
+            to_upsert = list(zip(ids, emb, meta))
+            _ = index.upsert(vectors=to_upsert)
+
     def _get_retriever(self):
         return SentenceTransformer('multi-qa-MiniLM-L6-cos-v1', device=self.device)
 
     def _get_context(self, question, top_k):
-        retrieverEncoder = self._get_retriever()
+        retriever_encoder = self._get_retriever()
         index = self.pineconeService.get_index()
-        xq = retrieverEncoder.encode([question]).tolist()
+        xq = retriever_encoder.encode([question]).tolist()
         xc = index.query(xq, top_k=top_k, include_metadata=True)
 
         return [self._transform_result(x) for x in xc["matches"]]
