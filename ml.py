@@ -30,6 +30,8 @@ class ProblemFixService:
             to_upsert = list(zip(ids, emb, meta))
             _ = index.upsert(vectors=to_upsert)
 
+        return len(df)
+
     def _get_retriever(self):
         return SentenceTransformer('multi-qa-MiniLM-L6-cos-v1', device=self.device)
 

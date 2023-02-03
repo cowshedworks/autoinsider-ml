@@ -60,8 +60,9 @@ def store_in_index():
     df.columns = ['ID', 'Title', 'Problem']
 
     service = ProblemFixService()
-    service.add_to_index(df)
+    records_indexed = service.add_to_index(df)
 
     return {
-        'message': 'Added records to index'
+        'message': 'Added records to index',
+        'records': records_indexed
     }, 200
