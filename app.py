@@ -25,18 +25,18 @@ def requires_token(f):
     return decorator
 
 
-@app.route('/', methods=['POST'])
+@app.route('/', methods=['GET'])
 @requires_token
 def similar():
     requestedLimit = 5
-    question = request.form.get('question')
+    question = request.args.get('question')
 
     if not question:
         return {'message': 'Client error: No question provided'}, 400
 
     try:
         service = ProblemFixService(app)
-        similarQuestions = service.getSimilarFor(question, requestedLimit)
+        similarQuestions = service.get_similar_for(question, requestedLimit)
 
         return {
             'message': 'AutoInsider Problem Fix ML Service',

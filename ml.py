@@ -8,21 +8,21 @@ class ProblemFixService:
         self.device = device
         self.pineconeService = PineconeService("extractive-question-answering")
 
-    def getSimilarFor(self, questionText, limit):
-        return self._getContext(questionText, top_k=limit)
+    def get_similar_for(self, questionText, limit):
+        return self._get_context(questionText, top_k=limit)
 
-    def _getRetriever(self):
+    def _get_retriever(self):
         return SentenceTransformer('multi-qa-MiniLM-L6-cos-v1', device=self.device)
 
-    def _getContext(self, question, top_k):
-        retrieverEncoder = self._getRetriever()
-        index = self.pineconeService.getIndex()
+    def _get_context(self, question, top_k):
+        retrieverEncoder = self._get_retriever()
+        index = self.pineconeService.get_index()
         xq = retrieverEncoder.encode([question]).tolist()
         xc = index.query(xq, top_k=top_k, include_metadata=True)
 
-        return [self._transformResult(x) for x in xc["matches"]]
+        return [self._transform_result(x) for x in xc["matches"]]
 
-    def _transformResult(self, result):
+    def _transform_result(self, result):
         return {
             'ai_id': result["id"],
             'problem_title': result["metadata"]["Title"],
@@ -41,10 +41,10 @@ class PineconeService:
             environment=current_app.config["PINECONE_ENV"]
         )
 
-    def getIndex(self):
+    def get_index(self):
         return pinecone.Index(self.index)
 
-    def rebuildIndex(self):
+    def rebuild_index(self):
         if self.index in pinecone.list_indexes():
             pinecone.delete_index(self.index)
 
