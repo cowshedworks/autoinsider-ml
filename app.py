@@ -26,6 +26,13 @@ def requires_token(f):
     return decorator
 
 
+@app.route('/', methods=['GET'])
+def index():
+    return {
+        'message': 'AutoInsider Problem Fix ML Service',
+    }
+
+
 @app.route('/similar', methods=['GET'])
 @requires_token
 def similar():
