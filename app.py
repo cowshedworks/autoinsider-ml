@@ -62,17 +62,20 @@ def similar():
 @app.route('/store', methods=['POST'])
 @requires_token
 def store_in_index():
-    problems = request.get_json()['data']
-    df = pd.DataFrame.from_dict(problems)
-    df.columns = ['ID', 'Title', 'Problem']
+    try:
+        problems = request.get_json()['data']
+        df = pd.DataFrame.from_dict(problems)
+        df.columns = ['ID', 'Title', 'Problem']
 
-    service = ProblemFixService()
-    records_indexed = service.add_to_index(df)
+        service = ProblemFixService()
+        records_indexed = service.add_to_index(df)
 
-    return {
-        'message': 'Added records to index',
-        'records': records_indexed
-    }, 200
+        return {
+            'message': 'Added records to index',
+            'records': records_indexed
+        }, 200
+    except:
+        return {'message': 'WAT'}, 500
 
 
 if __name__ == "__main__":
