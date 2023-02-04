@@ -74,8 +74,8 @@ def store_in_index():
             'message': 'Added records to index',
             'records': records_indexed
         }, 200
-    except:
-        return {'message': 'WAT'}, 500
+    except Exception as err:
+        return {'message': f"Unexpected {err=}, {type(err)=}"}, 500
 
 
 if __name__ == "__main__":
