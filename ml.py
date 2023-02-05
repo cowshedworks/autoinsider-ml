@@ -1,6 +1,10 @@
 import pinecone
+import mysql.connector
 from sentence_transformers import SentenceTransformer
 from flask import current_app
+from sys import getsizeof
+from pprint import pprint
+import pandas as pd
 
 
 class ProblemFixService:
@@ -10,6 +14,9 @@ class ProblemFixService:
 
     def get_similar_for(self, questionText, limit):
         return self._get_context(questionText, top_k=limit)
+
+    def rebuild_index(self):
+        self.pineconeService.rebuild_index()
 
     def add_to_index(self, df):
         retriever_encoder = self._get_retriever()
@@ -24,9 +31,9 @@ class ProblemFixService:
             # extract batch
             batch = df.iloc[i:i_end]
             # generate embeddings for batch
-            emb = retriever_encoder.encode(batch['Problem'].tolist()).tolist()
-            ids = batch['ID'].tolist()
-            meta = batch[['Title', 'Problem']].to_dict(orient="records")
+            emb = retriever_encoder.encode(batch['Context'].tolist()).tolist()
+            ids = batch['ID'].astype(str).tolist()
+            meta = batch[['Title']].to_dict(orient="records")
             to_upsert = list(zip(ids, emb, meta))
             _ = index.upsert(vectors=to_upsert)
 
@@ -49,6 +56,45 @@ class ProblemFixService:
             'problem_title': result["metadata"]["Title"],
             'score': result["score"],
         }
+
+
+class MYSQLService:
+    def __init__(self):
+        self.connection = self.connect()
+
+    def connect(self):
+        return mysql.connector.connect(
+            host=current_app.config["MYSQL_HOST"],
+            user=current_app.config["MYSQL_USER"],
+            password=current_app.config["MYSQL_PASSWORD"],
+            database=current_app.config["MYSQL_DATABASE"],
+            port=current_app.config["MYSQL_POST"]
+        )
+
+    def get_all_problems(self):
+        mycursor = self.connection.cursor()
+        mycursor.execute("""
+            SELECT
+                problems.id,
+                problems.title,
+                CONCAT(
+                    problems.title,
+                    ' ',
+                    problems.problem
+                ) AS context
+            FROM problems
+            JOIN cars
+            ON cars.id = problems.car_id
+            JOIN manufacturers
+            ON manufacturers.id = cars.manufacturer_id
+            WHERE problems.problem != ''
+                AND problems.status = 1
+                AND cars.id = problems.car_id
+        """)
+        myresult = mycursor.fetchall()
+
+        return pd.DataFrame(myresult, columns=[
+            "ID", "Title", "Context"])
 
 
 class PineconeService:

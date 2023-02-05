@@ -1,14 +1,37 @@
 
 from flask import Flask, request
 import config as config
+import click
 from functools import wraps
-from ml import ProblemFixService
+from ml import ProblemFixService, MYSQLService
 import pandas as pd
 
 app = Flask(__name__)
 app.config.from_object(config)
 
 api_token_header = 'X-ACCESS-TOKEN'
+
+
+# CLI commands
+@app.cli.command()
+def index_from_mysql():
+    try:
+        print('Pushing to pinecone from db')
+        problem_fix_service = ProblemFixService()
+        mysql_service = MYSQLService()
+        problem_fix_service.rebuild_index()
+        df = mysql_service.get_all_problems()
+        print(f"Attempting to index {len(df)} records")
+        total_indexed = 0
+        for i in range(0, len(df), 256):
+            i_end = min(i+256, len(df))
+            # extract batch
+            batch = df.iloc[i:i_end]
+            total_indexed += problem_fix_service.add_to_index(batch)
+            print(f"Inserted {len(batch)} records")
+        print(f"Completed, indexed {total_indexed} records")
+    except Exception as err:
+        print({'message': f"Unexpected {err=}, {type(err)=}"})
 
 
 # Authentication decorator
@@ -29,7 +52,7 @@ def requires_token(f):
 @app.route('/', methods=['GET'])
 def index():
     return {
-        'message': 'AutoInsider Problem Fix ML Service',
+        'message': 'AutoInsider Problem Fix ML Service API',
     }
 
 
@@ -65,7 +88,7 @@ def store_in_index():
     try:
         problems = request.get_json()['data']
         df = pd.DataFrame.from_dict(problems)
-        df.columns = ['ID', 'Title', 'Problem']
+        df.columns = ['ID', 'Title', 'Context']
 
         service = ProblemFixService()
         records_indexed = service.add_to_index(df)
