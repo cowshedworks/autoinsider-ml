@@ -5,14 +5,19 @@ import click
 from functools import wraps
 from ml import ProblemFixService, MYSQLService
 import pandas as pd
+import logging
 
 app = Flask(__name__)
 app.config.from_object(config)
 
 api_token_header = 'X-ACCESS-TOKEN'
 
+logging.basicConfig(filename='app.log', filemode='w',
+                    format='%(name)s - %(levelname)s - %(message)s')
 
 # CLI commands
+
+
 @app.cli.command()
 def index_from_mysql():
     try:
@@ -98,6 +103,7 @@ def store_in_index():
             'records': records_indexed
         }, 200
     except Exception as err:
+        logging.warning(f"Unexpected {err=}, {type(err)=}")
         return {'message': f"Unexpected {err=}, {type(err)=}"}, 500
 
 
