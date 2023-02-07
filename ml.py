@@ -18,6 +18,10 @@ class ProblemFixService:
     def rebuild_index(self):
         self.pineconeService.rebuild_index()
 
+    def delete_from_index(self, vector_ids):
+        index = self.pineconeService.get_index()
+        index.delete(ids=vector_ids)
+
     def add_to_index(self, df):
         retriever_encoder = self._get_retriever()
         index = self.pineconeService.get_index()

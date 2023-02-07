@@ -107,5 +107,26 @@ def store_in_index():
         return {'message': f"Unexpected {err=}, {type(err)=}"}, 500
 
 
+@app.route('/delete', methods=['POST'])
+@requires_token
+def delete_from_index():
+    try:
+        vector_ids = request.get_json()['data']
+
+        if type(vector_ids) is not list:
+            raise TypeError("Should be a list of vector ids")
+
+        service = ProblemFixService()
+        service.delete_from_index(vector_ids)
+
+        return {
+            'message': 'Deleted records from index',
+            'records': len(vector_ids)
+        }, 200
+    except Exception as err:
+        logging.warning(f"Unexpected {err=}, {type(err)=}")
+        return {'message': f"Unexpected {err=}, {type(err)=}"}, 500
+
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
