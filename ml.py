@@ -10,7 +10,7 @@ import pandas as pd
 class ProblemFixService:
     def __init__(self, device='cpu'):
         self.device = device
-        self.pineconeService = PineconeService("extractive-question-answering")
+        self.pineconeService = PineconeService("autoinsider-similar-problems")
 
     def get_similar_for(self, questionText, limit):
         return self._get_context(questionText, top_k=limit)
