@@ -98,7 +98,7 @@ def index():
 
 @app.route('/autoinsider/similar/problems/index', methods=['GET'])
 @requires_token
-def similar():
+def ai_similar_problems():
     question = request.args.get('question')
     requested_limit = request.args.get('limit', type=int)
 
@@ -121,7 +121,7 @@ def similar():
 
 @app.route('/autoinsider/similar/problems/store', methods=['POST'])
 @requires_token
-def store_in_index():
+def ai_similar_problems_store_in_index():
     try:
         problems = request.get_json()['data']
         df = pd.DataFrame.from_dict(problems)
@@ -140,7 +140,7 @@ def store_in_index():
 
 @app.route('/autoinsider/similar/problems/delete', methods=['POST'])
 @requires_token
-def delete_from_index():
+def ai_similar_problems_delete_from_index():
     try:
         vector_ids = request.get_json()['data']
 
@@ -160,7 +160,7 @@ def delete_from_index():
 
 @app.route('/europeanrailguide/similar/places/index', methods=['GET'])
 @requires_token
-def erg_similar_places():
+def erg_similar_places_similar_places():
     query = request.args.get('query')
     requested_limit = request.args.get('limit', type=int)
 
@@ -183,7 +183,7 @@ def erg_similar_places():
 
 @app.route('/europeanrailguide/similar/places/store', methods=['POST'])
 @requires_token
-def store_in_index():
+def erg_similar_places_store_in_index():
     try:
         places = request.get_json()['data']
         df = pd.DataFrame.from_dict(places)
@@ -202,7 +202,7 @@ def store_in_index():
 
 @app.route('/europeanrailguide/similar/places/delete', methods=['POST'])
 @requires_token
-def delete_from_index():
+def erg_similar_places_delete_from_index():
     try:
         vector_ids = request.get_json()['data']
 
