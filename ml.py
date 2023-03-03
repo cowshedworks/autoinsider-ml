@@ -5,15 +5,16 @@ from flask import current_app
 from sys import getsizeof
 from pprint import pprint
 import pandas as pd
+from abc import ABC, abstractmethod
 
 
-class ProblemFixService:
-    def __init__(self, device='cpu'):
+class BaseSimilarContentService(ABC):
+    def __init__(self, device='cpu', pineconeIndexName='no-valid-index'):
         self.device = device
-        self.pineconeService = PineconeService("autoinsider-similar-problems")
+        self.pineconeService = PineconeService(pineconeIndexName)
 
-    def get_similar_for(self, questionText, limit):
-        return self._get_context(questionText, top_k=limit)
+    def get_similar_for(self, queryText, limit):
+        return self._get_context(queryText, top_k=limit)
 
     def rebuild_index(self):
         self.pineconeService.rebuild_index()
@@ -46,13 +47,25 @@ class ProblemFixService:
     def _get_retriever(self):
         return SentenceTransformer('multi-qa-MiniLM-L6-cos-v1', device=self.device)
 
-    def _get_context(self, question, top_k):
+    def _get_context(self, queryText, top_k):
         retriever_encoder = self._get_retriever()
         index = self.pineconeService.get_index()
-        xq = retriever_encoder.encode([question]).tolist()
+        xq = retriever_encoder.encode([queryText]).tolist()
         xc = index.query(xq, top_k=top_k, include_metadata=True)
 
         return [self._transform_result(x) for x in xc["matches"]]
+
+    @abstractmethod
+    def _transform_result(self, result):
+        pass
+
+
+class AutoInsiderService(BaseSimilarContentService):
+    def __init__(self):
+        BaseSimilarContentService.__init__(
+            self,
+            pineconeIndexName='autoinsider-similar-problems'
+        )
 
     def _transform_result(self, result):
         return {
@@ -62,18 +75,58 @@ class ProblemFixService:
         }
 
 
-class MYSQLService:
+class EuropeanRailGuideService(BaseSimilarContentService):
     def __init__(self):
+        BaseSimilarContentService.__init__(
+            self,
+            pineconeIndexName='erg-similar-places'
+        )
+
+    def _transform_result(self, result):
+        return {
+            'erg_id': result["id"],
+            'place_name': result["metadata"]["Title"],
+            'score': result["score"],
+        }
+
+
+class MYSQLService:
+    def __init__(self, host, user, password, database, port):
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
+        self.port = port
         self.connection = self.connect()
 
     def connect(self):
         return mysql.connector.connect(
-            host=current_app.config["MYSQL_HOST"],
-            user=current_app.config["MYSQL_USER"],
-            password=current_app.config["MYSQL_PASSWORD"],
-            database=current_app.config["MYSQL_DATABASE"],
-            port=current_app.config["MYSQL_POST"]
+            host=self.host,
+            user=self.user,
+            password=self.password,
+            database=self.database,
+            port=self.port
         )
+
+    def get_all_places(self):
+        mycursor = self.connection.cursor()
+        mycursor.execute("""
+            SELECT
+                must_visit.id,
+                must_visit.name,
+                CONCAT(
+                    must_visit.name,
+                    ' ',
+                    must_visit.description
+                ) AS context
+            FROM must_visit
+            WHERE must_visit.description != ''
+                AND must_visit.active = 1
+        """)
+        myresult = mycursor.fetchall()
+
+        return pd.DataFrame(myresult, columns=[
+            "ID", "Title", "Context"])
 
     def get_all_problems(self):
         mycursor = self.connection.cursor()
