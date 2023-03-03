@@ -92,11 +92,11 @@ def requires_token(f):
 @ app.route('/', methods=['GET'])
 def index():
     return {
-        'message': 'AutoInsider Problem Fix ML Service API',
+        'message': 'ML Service API',
     }
 
 
-@app.route('/similar', methods=['GET'])
+@app.route('/autoinsider/similar/problems/index', methods=['GET'])
 @requires_token
 def similar():
     question = request.args.get('question')
@@ -119,7 +119,7 @@ def similar():
     }, 200
 
 
-@app.route('/store', methods=['POST'])
+@app.route('/autoinsider/similar/problems/store', methods=['POST'])
 @requires_token
 def store_in_index():
     try:
@@ -135,11 +135,10 @@ def store_in_index():
             'records': records_indexed
         }, 200
     except Exception as err:
-        logging.warning(f"Unexpected {err=}, {type(err)=}")
         return {'message': f"Unexpected {err=}, {type(err)=}"}, 500
 
 
-@app.route('/delete', methods=['POST'])
+@app.route('/autoinsider/similar/problems/delete', methods=['POST'])
 @requires_token
 def delete_from_index():
     try:
@@ -156,11 +155,10 @@ def delete_from_index():
             'records': len(vector_ids)
         }, 200
     except Exception as err:
-        logging.warning(f"Unexpected {err=}, {type(err)=}")
         return {'message': f"Unexpected {err=}, {type(err)=}"}, 500
 
 
-@app.route('/erg/similar/places', methods=['GET'])
+@app.route('/europeanrailguide/similar/places/index', methods=['GET'])
 @requires_token
 def erg_similar_places():
     query = request.args.get('query')
@@ -181,6 +179,45 @@ def erg_similar_places():
         'requested': requested_limit,
         'similar-places': similarPlaces
     }, 200
+
+
+@app.route('/europeanrailguide/similar/places/store', methods=['POST'])
+@requires_token
+def store_in_index():
+    try:
+        places = request.get_json()['data']
+        df = pd.DataFrame.from_dict(places)
+        df.columns = ['ID', 'Title', 'Context']
+
+        service = EuropeanRailGuideService()
+        records_indexed = service.add_to_index(df)
+
+        return {
+            'message': 'Added records to index',
+            'records': records_indexed
+        }, 200
+    except Exception as err:
+        return {'message': f"Unexpected {err=}, {type(err)=}"}, 500
+
+
+@app.route('/europeanrailguide/similar/places/delete', methods=['POST'])
+@requires_token
+def delete_from_index():
+    try:
+        vector_ids = request.get_json()['data']
+
+        if type(vector_ids) is not list:
+            raise TypeError("Should be a list of vector ids")
+
+        service = EuropeanRailGuideService()
+        service.delete_from_index(vector_ids)
+
+        return {
+            'message': 'Deleted records from index',
+            'records': len(vector_ids)
+        }, 200
+    except Exception as err:
+        return {'message': f"Unexpected {err=}, {type(err)=}"}, 500
 
 
 if __name__ == "__main__":
